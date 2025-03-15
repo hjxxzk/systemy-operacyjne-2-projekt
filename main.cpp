@@ -3,14 +3,19 @@
 #include <pthread.h>
 #include <iostream>
 
+pthread_mutex_t writeMutex = PTHREAD_MUTEX_INITIALIZER;
+
 struct Philosopher {
     int id;
 };
 
 void* think(void *arg) {
     auto* philosopher = static_cast<Philosopher*>(arg);
+
+    pthread_mutex_lock(&writeMutex);
     std::cout << "Philosopher " << philosopher->id
-        << " - " << "thinking...\n" << std::endl;
+        << " - " << "thinking..." << std::endl;
+    pthread_mutex_unlock(&writeMutex);
     return nullptr;
 }
 
@@ -28,6 +33,7 @@ int main(int argc, char* argv[]) {
         pthread_join(threads[i], nullptr);
     }
 
+    pthread_mutex_destroy(&writeMutex);
     return 0;
 }
 
