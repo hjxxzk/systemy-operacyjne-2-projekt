@@ -3,40 +3,37 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <iostream>
+#include <vector>
 
 pthread_mutex_t writeMutex = PTHREAD_MUTEX_INITIALIZER;
 int NUMBER_OF_PHILOSOPHERS;
 int INDEX_OF_FIRST_FORK = 0;
+constexpr int TIME_OF_AN_ACTION = 6;
 pthread_mutex_t *forks;
 
 struct Philosopher {
     int id;
     int leftForkId;
     int rightForkId;
+    bool isThinking;
 };
 
-void think(const Philosopher* philosopher) {
-    pthread_mutex_lock(&writeMutex);
-    std::cout << "Philosopher " << philosopher->id + 1
-              << " - thinking..." << std::endl;
-    pthread_mutex_unlock(&writeMutex);
-    sleep(3);
+void think(Philosopher *philosopher) {
+    philosopher->isThinking = true;
+    sleep(TIME_OF_AN_ACTION);
 }
 
-void pickUpTheForks(const Philosopher* philosopher) {
+void pickUpTheForks(const Philosopher *philosopher) {
     pthread_mutex_lock(&forks[philosopher->leftForkId]);
     pthread_mutex_lock(&forks[philosopher->rightForkId]);
 }
 
-void eat(const Philosopher* philosopher) {
-    pthread_mutex_lock(&writeMutex);
-    std::cout << "Philosopher " << philosopher->id + 1
-            << " - eating..." << std::endl;
-    pthread_mutex_unlock(&writeMutex);
-    sleep(3);
+void eat(Philosopher *philosopher) {
+    philosopher->isThinking = false;
+    sleep(TIME_OF_AN_ACTION);
 }
 
-void putDownTheForks(const Philosopher* philosopher) {
+void putDownTheForks(const Philosopher *philosopher) {
     pthread_mutex_unlock(&forks[philosopher->rightForkId]);
     pthread_mutex_unlock(&forks[philosopher->leftForkId]);
 }
@@ -61,10 +58,19 @@ int calculateRightForkId(int philosopherId) {
     }
 }
 
+void displayStatus(const std::vector<Philosopher> &philosophers) {
+    for (const auto &philosopher : philosophers) {
+        std::cout << "Philosopher " << philosopher.id + 1
+                << " is " << (philosopher.isThinking ? "thinking" : "eating")
+                << "..." << std::endl;
+    }
+    std::cout << "\n";
+}
+
 int main(int argc, char *argv[]) {
     NUMBER_OF_PHILOSOPHERS = std::stoi(argv[1]);
     pthread_t threads[NUMBER_OF_PHILOSOPHERS];
-    Philosopher philosophers[NUMBER_OF_PHILOSOPHERS];
+    std::vector<Philosopher> philosophers(NUMBER_OF_PHILOSOPHERS);
     forks = new pthread_mutex_t[NUMBER_OF_PHILOSOPHERS];
 
     for (int i = 0; i < NUMBER_OF_PHILOSOPHERS; i++) {
@@ -76,6 +82,11 @@ int main(int argc, char *argv[]) {
         philosophers[i].leftForkId = i;
         philosophers[i].rightForkId = calculateRightForkId(philosophers[i].id);
         pthread_create(&threads[i], nullptr, feast, &philosophers[i]);
+    }
+
+    while (true) {
+        displayStatus(philosophers);
+        sleep(TIME_OF_AN_ACTION);
     }
 
     for (int i = 0; i < NUMBER_OF_PHILOSOPHERS; i++) {
