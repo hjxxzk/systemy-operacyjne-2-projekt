@@ -5,7 +5,6 @@
 #include <iostream>
 #include <vector>
 
-pthread_mutex_t writeMutex = PTHREAD_MUTEX_INITIALIZER;
 int NUMBER_OF_PHILOSOPHERS;
 int INDEX_OF_FIRST_FORK = 0;
 constexpr int TIME_OF_AN_ACTION = 6;
@@ -97,7 +96,6 @@ int main(int argc, char *argv[]) {
         pthread_mutex_destroy(&forks[i]);
     }
 
-    pthread_mutex_destroy(&writeMutex);
     delete[] forks;
     return 0;
 }
